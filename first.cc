@@ -72,7 +72,7 @@ int main (int argc, char *argv[])
 
   // Install the server then start and stop it
   ApplicationContainer clientApps = echoClient.Install (nodes.Get (0));
-  clientApps.Start (Seconds (2.0));
+  clientApps.Start (Seconds (2.0)); // Client should start after server has started
   clientApps.Stop (Seconds (10.0));
   
   // Run the simulation
