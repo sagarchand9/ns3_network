@@ -79,9 +79,12 @@ int main (int argc, char *argv[])
   
   /*// ASCII tracing. File is created in top level directory
   AsciiTraceHelper ascii;
-  pointToPoint.EnableAsciiAll (ascii.CreateFileStream ("try_sagar.tr"));
+  pointToPoint.EnableAsciiAll (ascii.CreateFileStream ("try_first.tr"));
   */
-  pointToPoint.EnablePcapAll ("try_sagar");
+  
+  // PCAP tracing
+  pointToPoint.EnablePcapAll ("try_first");
+  
   // Run the simulation
   Simulator::Run ();
   Simulator::Destroy ();
