@@ -12,6 +12,7 @@ now run the command
 
 Here **try_first.cc** is file and you run **try_first**
 
+## VIEW TRACE FILE LOGS
 
 To view contents of trace file(.pcap), either use tools like wireshark or run
 
