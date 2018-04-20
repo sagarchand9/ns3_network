@@ -19,3 +19,9 @@ To view contents of trace file(.pcap), either use tools like wireshark or run
 #### `tcpdump -nn -tt -r try_first-0-0.pcap`
 
 
+#### `tcpdump -nn -tt -r try_first-1-0.pcap` 
+
+and so on for all the nodes
+
+
+These files are created in parent directory
