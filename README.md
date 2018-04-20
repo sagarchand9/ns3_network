@@ -7,7 +7,14 @@ goto folder
 
 now run the command
 
-#### `./waf --run examples/tutorial/first`
+#### `./waf --run examples/tutorial/try_first`
 
 
-Here **first.cc** is file and you run **first**
+Here **try_first.cc** is file and you run **try_first**
+
+
+To view contents of trace file(.pcap), either use tools like wireshark or run
+
+#### `tcpdump -nn -tt -r try_first-0-0.pcap`
+
+
