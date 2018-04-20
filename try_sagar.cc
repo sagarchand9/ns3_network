@@ -77,10 +77,11 @@ int main (int argc, char *argv[])
   clientApps.Start (Seconds (2.0)); // Client should start after server has started
   clientApps.Stop (Seconds (10.0));
   
-  // ASCII tracing. File is created in top level directory
+  /*// ASCII tracing. File is created in top level directory
   AsciiTraceHelper ascii;
-  pointToPoint.EnableAsciiAll (ascii.CreateFileStream ("first.tr"));
-  
+  pointToPoint.EnableAsciiAll (ascii.CreateFileStream ("try_sagar.tr"));
+  */
+  pointToPoint.EnablePcapAll ("try_sagar");
   // Run the simulation
   Simulator::Run ();
   Simulator::Destroy ();
