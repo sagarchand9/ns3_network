@@ -26,7 +26,9 @@ NS_LOG_COMPONENT_DEFINE ("FirstScriptExample");
 
 int main (int argc, char *argv[])
 {
+  uint32_t nPackets = 1;//Default value of nPackets
   CommandLine cmd;
+  cmd.AddValue("nPackets", "Number of packets to echo", nPackets);//Taking number of packets to be transmitted as cmd line argument
   cmd.Parse (argc, argv);
 
   // Take logs
@@ -53,7 +55,7 @@ int main (int argc, char *argv[])
 
   // Assign IP address to communicate
   Ipv4AddressHelper address;
-  address.SetBase ("10.1.1.0", "255.255.255.0");//IP and subnet
+  address.SetBase ("10.1.1.0", "255.255.255.0");//base IP and subnet. base IP = All IPs are to be assigned on forward of it
   Ipv4InterfaceContainer interfaces = address.Assign (devices);
 
  // Create a x type of server on port x
@@ -66,14 +68,18 @@ int main (int argc, char *argv[])
 
   // Create x type of client and set its attributes
   UdpEchoClientHelper echoClient (interfaces.GetAddress (1), 9);
-  echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
+  echoClient.SetAttribute ("MaxPackets", UintegerValue (nPackets));
   echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (2048));
 
   // Install the server then start and stop it
   ApplicationContainer clientApps = echoClient.Install (nodes.Get (0));
   clientApps.Start (Seconds (2.0)); // Client should start after server has started
   clientApps.Stop (Seconds (10.0));
+  
+  // ASCII tracing. File is created in top level directory
+  AsciiTraceHelper ascii;
+  pointToPoint.EnableAsciiAll (ascii.CreateFileStream ("first.tr"));
   
   // Run the simulation
   Simulator::Run ();
