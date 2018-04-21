@@ -14,14 +14,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <cassert>
+
 #include "ns3/core-module.h"
-#include "ns3/point-to-point-module.h"
 #include "ns3/network-module.h"
-#include "ns3/applications-module.h"
-#include "ns3/wifi-module.h"
-#include "ns3/mobility-module.h"
 #include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
+#include "ns3/point-to-point-module.h"
+#include "ns3/applications-module.h"
+#include "ns3/ipv4-global-routing-helper.h"
+
+#include "ns3/wifi-module.h"
+#include "ns3/mobility-module.h"
 #include "ns3/netanim-module.h"
 
 // Default Network Topology
@@ -70,38 +77,30 @@ main (int argc, char *argv[])
       LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
     }
 
-  NodeContainer p2pNodes;
-  p2pNodes.Create (4);
+  NodeContainer c;
+  c.Create (5);
+  NodeContainer n0n1 = NodeContainer (c.Get (0), c.Get (1));
+  NodeContainer n1234 = NodeContainer (c.Get (1), c.Get (2), c.Get (3), c.Get (4));
 
-  PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
-  pointToPoint.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  InternetStackHelper internet;
+  internet.Install (c.Get(1));
+  internet.Install (c.Get(2));
+  internet.Install (c.Get(3));
+  internet.Install (c.Get(4));
 
-  NetDeviceContainer p2pDevices;
-  p2pDevices = pointToPoint.Install (p2pNodes);
+  PointToPointHelper p2p;
+  p2p.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  p2p.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  NetDeviceContainer d0d1 = p2p.Install (n0n1);
 
-  NodeContainer csmaNodes1;
-  csmaNodes1.Add (p2pNodes.Get (1));
-  csmaNodes1.Create (nCsma);
-
-  NodeContainer csmaNodes2;
-  csmaNodes2.Add (p2pNodes.Get (3));
-  csmaNodes2.Create (nCsma);
-  
   CsmaHelper csma;
-  csma.SetChannelAttribute ("DataRate", StringValue ("100Mbps"));
-  csma.SetChannelAttribute ("Delay", TimeValue (NanoSeconds (6560)));
-
-  NetDeviceContainer csmaDevices1;
-  csmaDevices1 = csma.Install (csmaNodes1);
-
-  NetDeviceContainer csmaDevices2;
-  csmaDevices2 = csma.Install (csmaNodes2);
-
+  csma.SetChannelAttribute ("DataRate", StringValue ("5Mbps"));
+  csma.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  NetDeviceContainer d1234 = csma.Install (n1234);
+//////////////////
   NodeContainer wifiStaNodes;
   wifiStaNodes.Create (nWifi);
-  NodeContainer wifiApNode1 = p2pNodes.Get (0);
-  NodeContainer wifiApNode2 = p2pNodes.Get (2);
+  NodeContainer wifiApNode = c.Get (0);
 
   //Interconnection between channel and wifi node
   YansWifiChannelHelper channel = YansWifiChannelHelper::Default ();
@@ -123,11 +122,8 @@ main (int argc, char *argv[])
   mac.SetType ("ns3::ApWifiMac",
                "Ssid", SsidValue (ssid));
 
-  NetDeviceContainer apDevices1;
-  apDevices1 = wifi.Install (phy, mac, wifiApNode1);
-
-  NetDeviceContainer apDevices2;
-  apDevices2 = wifi.Install (phy, mac, wifiApNode2);
+  NetDeviceContainer apDevices;
+  apDevices = wifi.Install (phy, mac, wifiApNode);
 
   MobilityHelper mobility;
 
@@ -144,37 +140,29 @@ main (int argc, char *argv[])
   mobility.Install (wifiStaNodes);
 
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-  mobility.Install (wifiApNode1);
-  mobility.Install (wifiApNode2);
+  mobility.Install (wifiApNode);
 
   InternetStackHelper stack;
-  stack.Install (csmaNodes1);
-  stack.Install (wifiApNode1);
-  stack.Install (csmaNodes2);
-  stack.Install (wifiApNode2);
+  stack.Install (wifiApNode);
   stack.Install (wifiStaNodes);
 
   Ipv4AddressHelper address;
 
   address.SetBase ("10.1.1.0", "255.255.255.0");
   Ipv4InterfaceContainer p2pInterfaces;
-  p2pInterfaces = address.Assign (p2pDevices);
+  p2pInterfaces = address.Assign (d0d1);
 
   address.SetBase ("10.1.2.0", "255.255.255.0");
   Ipv4InterfaceContainer csmaInterfaces;
-  csmaInterfaces = address.Assign (csmaDevices);
+  csmaInterfaces = address.Assign (d1234);
 
   address.SetBase ("10.1.3.0", "255.255.255.0");
   address.Assign (staDevices);
-  address.Assign (apDevices1);
-
-  address.SetBase ("10.1.4.0", "255.255.255.0");
-  address.Assign (staDevices);
-  address.Assign (apDevices2);
+  address.Assign (apDevices);
 
   UdpEchoServerHelper echoServer (9);
 
-  ApplicationContainer serverApps = echoServer.Install (csmaNodes.Get (nCsma));
+  ApplicationContainer serverApps = echoServer.Install (c.Get(0));
   serverApps.Start (Seconds (1.0));
   serverApps.Stop (Seconds (10.0));
 
@@ -194,24 +182,22 @@ main (int argc, char *argv[])
 
   if (tracing == true)
     {
-      pointToPoint.EnablePcapAll ("try_third");
-      phy.EnablePcap ("try_third", apDevices1.Get (0));
-      phy.EnablePcap ("try_third", apDevices2.Get (0));
-      csma.EnablePcap ("try_third", csmaDevices1.Get (0), true);
-      csma.EnablePcap ("try_third", csmaDevices2.Get (0), true);
+      p2p.EnablePcapAll ("third");
+      phy.EnablePcap ("third", apDevices.Get (0));
+      csma.EnablePcap ("third", d1234.Get (0));
     }
 
-  /*AnimationInterface anim ("anim1.xml");
-  anim.SetConstantPosition(p2pNodes.Get(0), 0.0, 20.0);
+  AnimationInterface anim ("anim1.xml");
+  //anim.SetConstantPosition(c.Get(0), 0.0, 20.0);
 //  anim.SetConstantPosition(p2pNodes.Get(1), 17.0, 1.0);
-  anim.SetConstantPosition(csmaNodes.Get(0), 50.0, 0.0);
-  anim.SetConstantPosition(csmaNodes.Get(1), 55.0, 0.0);
-  anim.SetConstantPosition(csmaNodes.Get(2), 60.0, 0.0);
-  anim.SetConstantPosition(csmaNodes.Get(3), 65.0, 0.0);
-  anim.SetConstantPosition(wifiStaNodes.Get(0), 0.0, 5.0);
-  anim.SetConstantPosition(wifiStaNodes.Get(1), 0.0, 10.0);
-  anim.SetConstantPosition(wifiStaNodes.Get(2), 0.0, 15.0);
-*/
+  anim.SetConstantPosition(n1234.Get(0), 50.0, 0.0);
+  anim.SetConstantPosition(n1234.Get(1), 55.0, 0.0);
+  anim.SetConstantPosition(n1234.Get(2), 60.0, 0.0);
+  anim.SetConstantPosition(n1234.Get(3), 65.0, 0.0);
+//  anim.SetConstantPosition(wifiStaNodes.Get(0), 0.0, 5.0);
+//  anim.SetConstantPosition(wifiStaNodes.Get(1), 0.0, 10.0);
+//  anim.SetConstantPosition(wifiStaNodes.Get(2), 0.0, 15.0);
+
   Simulator::Run ();
   Simulator::Destroy ();
   return 0;
