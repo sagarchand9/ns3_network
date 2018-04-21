@@ -19,6 +19,7 @@
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
+#include "ns3/netanim-module.h" //for netanim
 
 using namespace ns3;
 
@@ -70,7 +71,7 @@ int main (int argc, char *argv[])
   UdpEchoClientHelper echoClient (interfaces.GetAddress (1), 9);
   echoClient.SetAttribute ("MaxPackets", UintegerValue (nPackets));
   echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-  echoClient.SetAttribute ("PacketSize", UintegerValue (2048));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
 
   // Install the server then start and stop it
   ApplicationContainer clientApps = echoClient.Install (nodes.Get (0));
@@ -85,6 +86,11 @@ int main (int argc, char *argv[])
   // PCAP tracing
   pointToPoint.EnablePcapAll ("try_first");
   
+  // Creating xml file for netanim before simulation runs
+  AnimationInterface anim ("anim1.xml");
+  anim.SetConstantPosition(nodes.Get(0), 1.0, 2.0);
+  anim.SetConstantPosition(nodes.Get(1), 2.0, 3.0);
+
   // Run the simulation
   Simulator::Run ();
   Simulator::Destroy ();
