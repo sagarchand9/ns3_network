@@ -31,17 +31,6 @@
 #include "ns3/mobility-module.h"
 #include "ns3/netanim-module.h"
 
-// Default Network Topology
-//
-//   Wifi 10.1.3.0
-//                 AP
-//  *    *    *    *
-//  |    |    |    |    10.1.1.0
-// n5   n6   n7   n0 -------------- n1   n2   n3   n4
-//                   point-to-point  |    |    |    |
-//                                   ================
-//                                     LAN 10.1.2.0
-
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("Wireless");
@@ -52,7 +41,7 @@ main (int argc, char *argv[])
   bool verbose = true;
   uint32_t nCsma = 3;
   uint32_t nWifi = 3;
-  bool tracing = false;
+  bool tracing = true;
 
   CommandLine cmd;
   cmd.AddValue ("nCsma", "Number of \"extra\" CSMA nodes/devices", nCsma);
@@ -78,26 +67,42 @@ main (int argc, char *argv[])
     }
 
   NodeContainer c;
-  c.Create (5);
+  c.Create (9);
   NodeContainer n0n1 = NodeContainer (c.Get (0), c.Get (1));
   NodeContainer n1234 = NodeContainer (c.Get (1), c.Get (2), c.Get (3), c.Get (4));
+  NodeContainer n4n5 = NodeContainer (c.Get (4), c.Get (5));
+  NodeContainer n5678 = NodeContainer (c.Get (5), c.Get (6), c.Get (7), c.Get (8));
 
   InternetStackHelper internet;
   internet.Install (c.Get(1));
   internet.Install (c.Get(2));
   internet.Install (c.Get(3));
   internet.Install (c.Get(4));
+  internet.Install (c.Get(5));
+  internet.Install (c.Get(6));
+  internet.Install (c.Get(7));
+  internet.Install (c.Get(8));
 
-  PointToPointHelper p2p;
-  p2p.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
-  p2p.SetChannelAttribute ("Delay", StringValue ("2ms"));
-  NetDeviceContainer d0d1 = p2p.Install (n0n1);
+  PointToPointHelper p2p_1;
+  p2p_1.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  p2p_1.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  NetDeviceContainer d0d1 = p2p_1.Install (n0n1);
 
-  CsmaHelper csma;
-  csma.SetChannelAttribute ("DataRate", StringValue ("5Mbps"));
-  csma.SetChannelAttribute ("Delay", StringValue ("2ms"));
-  NetDeviceContainer d1234 = csma.Install (n1234);
-//////////////////
+  CsmaHelper csma_1;
+  csma_1.SetChannelAttribute ("DataRate", StringValue ("5Mbps"));
+  csma_1.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  NetDeviceContainer d1234 = csma_1.Install (n1234);
+
+  PointToPointHelper p2p_2;
+  p2p_2.SetDeviceAttribute ("DataRate", StringValue ("5Mbps"));
+  p2p_2.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  NetDeviceContainer d4d5 = p2p_2.Install (n4n5);
+
+  CsmaHelper csma_2;
+  csma_2.SetChannelAttribute ("DataRate", StringValue ("5Mbps"));
+  csma_2.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  NetDeviceContainer d5678 = csma_2.Install (n5678);
+
   NodeContainer wifiStaNodes;
   wifiStaNodes.Create (nWifi);
   NodeContainer wifiApNode = c.Get (0);
@@ -149,12 +154,20 @@ main (int argc, char *argv[])
   Ipv4AddressHelper address;
 
   address.SetBase ("10.1.1.0", "255.255.255.0");
-  Ipv4InterfaceContainer p2pInterfaces;
-  p2pInterfaces = address.Assign (d0d1);
+  Ipv4InterfaceContainer p2pInterfaces_1;
+  p2pInterfaces_1 = address.Assign (d0d1);
 
   address.SetBase ("10.1.2.0", "255.255.255.0");
-  Ipv4InterfaceContainer csmaInterfaces;
-  csmaInterfaces = address.Assign (d1234);
+  Ipv4InterfaceContainer csmaInterfaces_1;
+  csmaInterfaces_1 = address.Assign (d1234);
+
+  address.SetBase ("10.1.4.0", "255.255.255.0");
+  Ipv4InterfaceContainer p2pInterfaces_2;
+  p2pInterfaces_2 = address.Assign (d4d5);
+
+  address.SetBase ("10.1.5.0", "255.255.255.0");
+  Ipv4InterfaceContainer csmaInterfaces_2;
+  csmaInterfaces_2 = address.Assign (d5678);
 
   address.SetBase ("10.1.3.0", "255.255.255.0");
   address.Assign (staDevices);
@@ -166,7 +179,7 @@ main (int argc, char *argv[])
   serverApps.Start (Seconds (1.0));
   serverApps.Stop (Seconds (10.0));
 
-  UdpEchoClientHelper echoClient (csmaInterfaces.GetAddress (nCsma), 9);
+  UdpEchoClientHelper echoClient (csmaInterfaces_1.GetAddress (nCsma), 9);
   echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
   echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
   echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
@@ -182,18 +195,25 @@ main (int argc, char *argv[])
 
   if (tracing == true)
     {
-      p2p.EnablePcapAll ("third");
-      phy.EnablePcap ("third", apDevices.Get (0));
-      csma.EnablePcap ("third", d1234.Get (0));
+      p2p_1.EnablePcapAll ("try_thrd");
+      p2p_2.EnablePcapAll ("try_third");
+      phy.EnablePcap ("try_thrd", apDevices.Get (0));
+      csma_1.EnablePcap ("try_thrd", d1234.Get (0));
+      csma_2.EnablePcap ("try_third", d5678.Get (0));
     }
 
-  AnimationInterface anim ("anim1.xml");
+  AnimationInterface anim ("anim2.xml");
   //anim.SetConstantPosition(c.Get(0), 0.0, 20.0);
 //  anim.SetConstantPosition(p2pNodes.Get(1), 17.0, 1.0);
   anim.SetConstantPosition(n1234.Get(0), 50.0, 0.0);
   anim.SetConstantPosition(n1234.Get(1), 55.0, 0.0);
   anim.SetConstantPosition(n1234.Get(2), 60.0, 0.0);
   anim.SetConstantPosition(n1234.Get(3), 65.0, 0.0);
+  anim.SetConstantPosition(n5678.Get(0), 65.0, 5.0);
+  anim.SetConstantPosition(n5678.Get(1), 65.0, 10.0);
+  anim.SetConstantPosition(n5678.Get(2), 65.0, 15.0);
+  anim.SetConstantPosition(n5678.Get(3), 65.0, 20.0);
+//
 //  anim.SetConstantPosition(wifiStaNodes.Get(0), 0.0, 5.0);
 //  anim.SetConstantPosition(wifiStaNodes.Get(1), 0.0, 10.0);
 //  anim.SetConstantPosition(wifiStaNodes.Get(2), 0.0, 15.0);
