@@ -7,7 +7,10 @@ goto folder
 
 now run the command
 
-#### `./waf --run examples/tutorial/try_first`
+#### `./waf --run scratch/try_first --nPackets=1`
+
+
+Here nPackets is number of packets you want to specify 
 
 
 Here **try_first.cc** is file and you run **try_first**
