@@ -6,7 +6,7 @@ copy code in scratch folder
 
 now run the command
 
-#### `"./waf --run scratch/try_mixed-global-routing --nPackets=1"`
+#### `./waf --run "scratch/try_mixed-global-routing --nPackets=1"`
 
 Here nPackets is number of packets you want to specify 
 
