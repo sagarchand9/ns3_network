@@ -48,15 +48,17 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("MixedGlobalRoutingExample");
 
-int 
-main (int argc, char *argv[])
+int main (int argc, char *argv[])
 {
+  uint32_t nPackets = 1;//Default value of nPackets
+
   Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (210));
   Config::SetDefault ("ns3::OnOffApplication::DataRate", StringValue ("448kb/s"));
 
   // Allow the user to override any of the defaults and the above
   // Bind ()s at run-time, via command-line arguments
   CommandLine cmd;
+  cmd.AddValue("nPackets", "Number of packets to echo", nPackets);//Taking number of packets to be transmitted as cmd line argument
   cmd.Parse (argc, argv);
 
   NS_LOG_INFO ("Create nodes.");
@@ -119,7 +121,7 @@ main (int argc, char *argv[])
   // Create the OnOff application to send UDP datagrams of size
   // 210 bytes at a rate of 448 Kb/s
   NS_LOG_INFO ("Create Applications.");
-  uint16_t port = 9;   // Discard port (RFC 863)
+/*  uint16_t port = 9;   // Discard port (RFC 863)
   OnOffHelper onoff ("ns3::UdpSocketFactory",
                      InetSocketAddress (i6789.GetAddress (3), port));
   onoff.SetConstantRate (DataRate ("300bps"));
@@ -128,6 +130,24 @@ main (int argc, char *argv[])
   ApplicationContainer apps = onoff.Install (c.Get (0));
   apps.Start (Seconds (1.0));
   apps.Stop (Seconds (10.0));
+*/
+  UdpEchoServerHelper echoServer (9);
+  
+  ApplicationContainer serverApps = echoServer.Install (c.Get(0));
+  serverApps.Start (Seconds (1.0));
+  serverApps.Stop (Seconds (10.0));
+
+  UdpEchoClientHelper echoClient (i6789.GetAddress (3), 9);
+  echoClient.SetAttribute ("MaxPackets", UintegerValue (nPackets));
+  echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
+  echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+
+  ApplicationContainer clientApps = echoClient.Install (c.Get (1));
+  clientApps.Start (Seconds (2.0));
+  clientApps.Stop (Seconds (10.0));
+
+
+
 
   AsciiTraceHelper ascii;
   Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("mixed-global-routing.tr");
