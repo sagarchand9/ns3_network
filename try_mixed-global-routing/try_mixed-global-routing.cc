@@ -61,11 +61,12 @@ main (int argc, char *argv[])
 
   NS_LOG_INFO ("Create nodes.");
   NodeContainer c;
-  c.Create (7);
+  c.Create (10);
   NodeContainer n0n2 = NodeContainer (c.Get (0), c.Get (2));
   NodeContainer n1n2 = NodeContainer (c.Get (1), c.Get (2));
   NodeContainer n5n6 = NodeContainer (c.Get (5), c.Get (6));
   NodeContainer n2345 = NodeContainer (c.Get (2), c.Get (3), c.Get (4), c.Get (5));
+  NodeContainer n6789 = NodeContainer (c.Get (6), c.Get (7), c.Get (8), c.Get (9));
 
   InternetStackHelper internet;
   internet.Install (c);
@@ -89,6 +90,9 @@ main (int argc, char *argv[])
   csma.SetChannelAttribute ("Delay", StringValue ("2ms"));
   NetDeviceContainer d2345 = csma.Install (n2345);
 
+  csma.SetChannelAttribute ("DataRate", StringValue ("5Mbps"));
+  csma.SetChannelAttribute ("Delay", StringValue ("2ms"));
+  NetDeviceContainer d6789 = csma.Install (n6789);
   // Later, we add IP addresses.
   NS_LOG_INFO ("Assign IP Addresses.");
   Ipv4AddressHelper ipv4;
@@ -104,6 +108,10 @@ main (int argc, char *argv[])
   ipv4.SetBase ("10.250.1.0", "255.255.255.0");
   ipv4.Assign (d2345);
 
+
+  ipv4.SetBase ("10.250.2.0", "255.255.255.0");
+  Ipv4InterfaceContainer i6789 = ipv4.Assign (d6789);;
+
   // Create router nodes, initialize routing database and set up the routing
   // tables in the nodes.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
@@ -113,7 +121,7 @@ main (int argc, char *argv[])
   NS_LOG_INFO ("Create Applications.");
   uint16_t port = 9;   // Discard port (RFC 863)
   OnOffHelper onoff ("ns3::UdpSocketFactory",
-                     InetSocketAddress (i5i6.GetAddress (1), port));
+                     InetSocketAddress (i6789.GetAddress (3), port));
   onoff.SetConstantRate (DataRate ("300bps"));
   onoff.SetAttribute ("PacketSize", UintegerValue (50));
 
@@ -138,6 +146,9 @@ main (int argc, char *argv[])
   anim.SetConstantPosition(n5n6.Get(1), 65.0, 10.0);
   anim.SetConstantPosition(n1n2.Get(0), 50.0, 10.0);
   anim.SetConstantPosition(n0n2.Get(0), 55.0, 10.0);
+  anim.SetConstantPosition(n6789.Get(1), 65.0, 20.0);
+  anim.SetConstantPosition(n6789.Get(2), 65.0, 25.0);
+  anim.SetConstantPosition(n6789.Get(3), 65.0, 30.0);
 
   NS_LOG_INFO ("Run Simulation.");
   Simulator::Run ();
