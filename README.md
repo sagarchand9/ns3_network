@@ -1,3 +1,5 @@
+[![HitCount](http://hits.dwyl.com/sagarchand9/ns3_network.svg)](http://hits.dwyl.com/sagarchand9/ns3_network)
+
 ## TO RUN
 
 goto folder
